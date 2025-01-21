@@ -1,22 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
-
 var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice");
 
-builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithReference(apiService)
-    .WaitFor(apiService);
-
 // https://github.com/SigNoz/signoz/blob/v0.68.0/deploy/docker/clickhouse-setup/docker-compose-minimal.yaml
-
-builder.AddContainer("clickhouse", "clickhouse/clickhouse-server", "24.1.2-alpine")
-    .WithEndpoint(8123, 8123)
-    .WithEndpoint(9000, 9000)
-    .WithEndpoint(9181, 9181);
-
-    
-
-builder.AddContainer("zookeeper", "bitnami/zookeepe", "3.7.1")
+var zookeeper = builder.AddContainer("signoz-zookeeper", "bitnami/zookeeper", "3.7.1")
     .WithEndpoint(2181, 2181)
     .WithEndpoint(2888, 2888)
     .WithEndpoint(3888, 3888)
@@ -25,4 +11,15 @@ builder.AddContainer("zookeeper", "bitnami/zookeepe", "3.7.1")
     .WithEnvironment("ZOO_SERVER_ID", "1")
     .WithEnvironment("ZOO_AUTOPURGE_INTERVAL", "1");
 
+var clickhouse = builder.AddContainer("signoz-clickhouse", "clickhouse/clickhouse-server", "24.1.2-alpine")
+    .WithEndpoint(8123, 8123)
+    .WithEndpoint(9000, 9000)
+    .WithEndpoint(9181, 9181)
+    .WithBindMount("Config/clickhouse-config.xml", "/etc/clickhouse-server/config.xml")
+    .WithBindMount("Config/clickhouse-users.xml", "/etc/clickhouse-server/users.xml")
+    .WithBindMount("Config/custom-function.xml", "/etc/clickhouse-server/custom-function.xml")
+    .WithBindMount("Config/clickhouse-cluster.xml", "/etc/clickhouse-server/config.d/cluster.xml")
+    .WithBindMount("Config/data/clickhouse/", "/var/lib/clickhouse/")
+    .WithBindMount("Config/user_scripts", "/var/lib/clickhouse/user_scripts/")
+    .WaitFor(zookeeper);
 builder.Build().Run();
