@@ -23,13 +23,6 @@ var clickhouse = builder.AddContainer("signoz-clickhouse", "clickhouse/clickhous
     .WithBindMount("Container/data/clickhouse/", "/var/lib/clickhouse/")
     .WaitFor(zookeeper);
 
-var alertManager = builder.AddContainer("signoz-alertmanger", "signoz/alertmanager", "0.23.7")
-    .WithArgs("--queryService.url=http://host.docker.internal:8085", "--storage.path=/data")
-    .WithEndpoint(9093, name: "alertmanager-9093", isProxied: false)
-    .WithBindMount("Container/data/alertmanager", "/data")
-    .WaitFor(clickhouse);
-
-
 var queryFrontEnd = builder.AddContainer("signoz-frontend", "signoz/frontend", "0.68.0")
     .WithHttpEndpoint(3301, name: "frontend-3301", isProxied: false)
     .WithBindMount("Container/config/frontend/nginx-config.conf", "/etc/nginx/conf.d/default.conf");
@@ -55,6 +48,13 @@ var queryService = builder.AddContainer("signoz-query-service", "signoz/query-se
     .WithHttpEndpoint(8085, name: "query-service-8085", isProxied: false)
     .WaitFor(clickhouse)
     .WaitFor(otelMigratorSync);
+
+var alertManager = builder.AddContainer("signoz-alertmanger", "signoz/alertmanager", "0.23.7")
+    .WithArgs("--queryService.url=http://query-service:8085", "--storage.path=/data")
+    .WithEndpoint(9093, name: "alertmanager-9093", isProxied: false)
+    .WithBindMount("Container/data/alertmanager", "/data")
+    .WithReference(queryService.GetEndpoint("query-service-8085"))
+    .WaitFor(clickhouse);
 
 var otelCollector = builder.AddContainer("otel-collector", "ignoz/signoz-otel-collector", "0.111.23")
     .WithArgs("--config=/etc/otel-collector-config.yaml", "--manager-config=/etc/manager-config.yaml",
