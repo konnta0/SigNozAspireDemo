@@ -400,3 +400,4 @@ FodyWeavers.xsd
 *.sln.iml
 AspireApp1/.idea
 .DS_Store
+AspireApp1/AspireApp1.AppHost/Container/data
