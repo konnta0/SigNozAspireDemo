@@ -68,6 +68,7 @@ var alertManager = builder.AddContainer("alertmanger", "signoz/alertmanager", "0
 queryService.WithReference(alertManager.GetEndpoint("alertmanager-9093"));
 
 var otelCollector = builder.AddContainer("otel-collector", "signoz/signoz-otel-collector", "0.111.23")
+    .WithContainerRuntimeArgs("--user=0")
     .WithArgs("--config=/etc/otel-collector-config.yaml", "--manager-config=/etc/manager-config.yaml",
         "--copy-path=/var/tmp/collector-config.yaml", "--feature-gates=-pkg.translator.prometheus.NormalizeName")
     .WithBindMount("Container/config/otel-collector/otel-collector-config.yaml", "/etc/otel-collector-config.yaml")
@@ -84,6 +85,7 @@ var otelCollector = builder.AddContainer("otel-collector", "signoz/signoz-otel-c
 
 var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice")
     .WithReference(otelCollector.GetEndpoint("otel-collector-4318"))
+    .WithEnvironment("OTEL_SERVICE_NAME", "api-service")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WaitFor(otelCollector);
 
@@ -91,6 +93,7 @@ builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
     .WithReference(otelCollector.GetEndpoint("otel-collector-4318"))
+    .WithEnvironment("OTEL_SERVICE_NAME", "webfrontend")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WaitFor(apiService)
     .WaitFor(frontend)
