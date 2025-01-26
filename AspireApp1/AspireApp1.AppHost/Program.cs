@@ -79,6 +79,7 @@ var otelCollector = builder.AddContainer("otel-collector", "signoz/signoz-otel-c
     .WithEnvironment("LOW_CARDINAL_EXCEPTION_GROUPING", "false")
     .WithEndpoint(4317, name: "otel-collector-4317", isProxied: false)
     .WithHttpEndpoint(4318, name: "otel-collector-4318", isProxied: false)
+    .WithReference(clickhouse.GetEndpoint("clickhouse-9000"))
     .WaitFor(clickhouse)
     .WaitFor(queryService)
     .WaitForCompletion(otelMigratorSync, 0);
