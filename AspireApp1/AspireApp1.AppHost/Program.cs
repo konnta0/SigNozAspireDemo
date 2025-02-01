@@ -93,33 +93,18 @@ var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice"
     .WithEnvironment("OTEL_LOG_LEVEL", "debug")
     .WithEnvironment("OTEL_SERVICE_NAME", "api-service")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
-    .WithReference(otelCollector.GetEndpoint("otel-collector-4318"))
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
     .WaitFor(otelCollector);
 
 builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
-    .WithReference(otelCollector.GetEndpoint("otel-collector-4318"))
     .WithEnvironment("OTEL_LOG_LEVEL", "debug")
     .WithEnvironment("OTEL_SERVICE_NAME", "webfrontend")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
     .WaitFor(apiService)
     .WaitFor(frontend)
     .WaitFor(otelCollector);
-
-// var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice")
-//     .WithEnvironment("OTEL_SERVICE_NAME", "api-service")
-//     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-//     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
-//
-// builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
-//     .WithExternalHttpEndpoints()
-//     .WithReference(apiService)
-//     .WithEnvironment("OTEL_SERVICE_NAME", "webfrontend")
-//     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-//     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
-//     .WaitFor(apiService);
 
 builder.Build().Run();
