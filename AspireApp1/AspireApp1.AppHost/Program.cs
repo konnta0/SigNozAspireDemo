@@ -79,30 +79,26 @@ var otelCollector = builder.AddContainer("otel-collector", "signoz/signoz-otel-c
     .WithBindMount("/", "/hostfs", true)
     .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "host.name=signoz-host,os.type=linux")
     .WithEnvironment("LOW_CARDINAL_EXCEPTION_GROUPING", "false")
-    .WithEndpoint(4317, name: "otel-collector-4317", isProxied: false)
-    .WithHttpEndpoint(4318, name: "otel-collector-4318", isProxied: false)
-    .WithEndpoint(14268, name: "otel-collector-14268", isProxied: false)
-    .WithHttpEndpoint(55679, name: "otel-collector-55679", isProxied: false)
+    .WithHttpEndpoint(port: 4317, targetPort: 4317, name: "grpc")
+    .WithHttpEndpoint(port: 4318, targetPort: 4318, name: "http")
+    .WithEndpoint(port: 14268, targetPort: 4318, name: "jaeger-thrift-http")
+    .WithHttpEndpoint(port: 55679, targetPort: 55679, name: "zpages")
     .WithReference(clickhouse.GetEndpoint("clickhouse-9000"))
     .WithReference(queryService.GetEndpoint("query-service-4320"))
     .WaitFor(clickhouse)
     .WaitFor(queryService)
-    .WaitForCompletion(otelMigratorSync, 0);
+    .WaitForCompletion(otelMigratorSync);
 
 var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice")
-    .WithEnvironment("OTEL_LOG_LEVEL", "debug")
     .WithEnvironment("OTEL_SERVICE_NAME", "api-service")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("grpc"))
     .WaitFor(otelCollector);
 
 builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
-    .WithEnvironment("OTEL_LOG_LEVEL", "debug")
     .WithEnvironment("OTEL_SERVICE_NAME", "webfrontend")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("http"))
     .WaitFor(apiService)
     .WaitFor(frontend)
     .WaitFor(otelCollector);
