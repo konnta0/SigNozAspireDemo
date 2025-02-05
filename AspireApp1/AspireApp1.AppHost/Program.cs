@@ -27,11 +27,6 @@ var otelMigratorSync = builder.AddContainer("otel-collector-migrator-sync", "sig
     .WithReference(clickhouse.GetEndpoint("clickhouse-9000"))
     .WaitFor(clickhouse);
 
-// var otelMigratorAsync = builder.AddContainer("otel-collector-migrator-async", "signoz/signoz-schema-migrator", "0.111.23")
-//     .WithArgs("async", "--dsn=tcp://clickhouse:9000", "--up=")
-//     .WithReference(clickhouse.GetEndpoint("clickhouse-9000"))
-//     .WaitForCompletion(otelMigratorSync, 0);
-
 var queryService = builder.AddContainer("query-service", "signoz/query-service", "0.68.0")
     .WithArgs("-config=/root/config/prometheus.yml", "--use-logs-new-schema=true",
         "--use-trace-new-schema=true")
@@ -98,7 +93,7 @@ builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
     .WithEnvironment("OTEL_SERVICE_NAME", "webfrontend")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("http"))
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otelCollector.GetEndpoint("grpc"))
     .WaitFor(apiService)
     .WaitFor(frontend)
     .WaitFor(otelCollector);
