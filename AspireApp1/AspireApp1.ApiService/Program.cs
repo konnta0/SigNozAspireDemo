@@ -1,3 +1,6 @@
+using System.Diagnostics.Metrics;
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
@@ -8,6 +11,11 @@ builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+const string meterName = "MyCustomMetrics";
+builder.Services.AddOpenTelemetry().WithMetrics(static metrics =>
+{
+    metrics.AddMeter(meterName);
+});
 
 var app = builder.Build();
 
@@ -20,9 +28,12 @@ if (app.Environment.IsDevelopment())
 }
 
 string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
-
-app.MapGet("/weatherforecast", () =>
+var meter = new Meter(meterName, "1.0.0");
+var requestCounter = meter.CreateCounter<long>("myapp_requests", "requests", "Number of requests handled");
+app.MapGet("/weatherforecast", ([FromServices]ILogger<Program> logger) =>
 {
+    requestCounter.Add(1);
+    logger.LogInformation("Getting weather forecast");
     var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
