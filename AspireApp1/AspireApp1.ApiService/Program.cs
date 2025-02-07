@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+builder.Services.AddOpenTelemetry().WithLogging();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
@@ -33,7 +34,10 @@ var requestCounter = meter.CreateCounter<long>("myapp_requests", "requests", "Nu
 app.MapGet("/weatherforecast", ([FromServices]ILogger<Program> logger) =>
 {
     requestCounter.Add(1);
-    logger.LogInformation("Getting weather forecast");
+    logger.LogInformation("Getting weather forecast. Information!");
+    logger.LogWarning("Getting weather forecast. Warning!");
+    logger.LogError("Getting weather forecast. Error!");
+
     var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
