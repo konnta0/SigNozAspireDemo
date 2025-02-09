@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+builder.Services.AddOpenTelemetry().WithLogging();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
